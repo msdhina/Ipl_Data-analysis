@@ -1,0 +1,100 @@
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(tidyverse)
+library(plyr)
+
+
+a<-fread("C:/Users/Baymax/Downloads/ds/matches.csv", stringsAsFactors = T)
+ad<-fread("C:/Users/Baymax/Downloads/ds/deliveries.csv/deliveries.csv",stringsAsFactors = T)
+names(a)
+names(ad)
+View(a)
+View(ad)
+
+
+## virat_kholi
+##runs per over count
+
+vk<-data.table(ad)
+vko<-vk %>% select(batsman,over,total_runs,ball)%>%filter(batsman=="V Kohli") %>% group_by(over) %>% summarise(runs=sum(total_runs))
+View(vko)
+vko %>% ggplot(aes(over,runs,fill=over))+
+  geom_bar(stat = "identity")+
+  scale_x_continuous(breaks = 1:20)+ 
+  guides(fill=F) +xlab("Over") + ylab("Total runs scored") +
+  ggtitle("Total number of runs scored in each over")
+
+
+##
+d<-vk %>% select(batsman,batsman_runs,ball)%>% filter(batsman=="V Kohli")%>%group_by(ball) %>% summarise(aa = sum(batsman_runs)) 
+View(d)
+
+
+
+##bowler with most dismissals
+vvv=vk%>%select(dismissal_kind,batsman)%>%spread(vk,dismissal_kind)
+View(vvv)
+vdb<-vk%>%select(batsman,bowler,player_dismissed,dismissal_kind)%>%group_by(bowler,dismissal_kind)%>%filter(batsman=="V Kohli" & player_dismissed=="V Kohli" )%>% count(bowler,player_dismissed)
+View(vdb)
+vdb %>%ggplot(aes(bowler,player_dismissed,fill=dismissal_kind))+theme(axis.text.x = element_text(angle = 90, hjust = 1))+geom_bar(stat = "identity")
+
+
+##A Nehra vs Virat
+as<-vk%>%select(batsman,bowler,over,player_dismissed,dismissal_kind)%>%group_by(bowler,batsman,over)%>%filter(batsman=="V Kohli" & bowler=="A Nehra" & player_dismissed=="V Kohli")
+View(as)()
+as %>%ggplot(aes(over,dismissal_kind,fill=bowler))+geom_point(stat = "identity")
+
+
+
+##
+dd<-vk %>% select(batsman,batsman_runs,over,bowler)%>% filter(batsman=="V Kohli" & over)%>%group_by(bowler) %>% summarise(aa = sum(batsman_runs)) 
+View(dd)
+
+
+## Getting values from matches dataset
+vk_venue<-a%>%select(id,venue)
+colnames(vk_venue)=c("match_id","venue")
+vk_venue<-data.table(vk_venue)
+vk<-data.table(ad)
+setkey(vk_venue,match_id)
+setkey(vk,match_id)
+vk=vk[vk_venue]
+
+
+
+##Stadium performances
+vk1=vk%>%select(match_id,batsman,venue,total_runs)%>%
+  filter(batsman=="V Kohli")%>%
+  group_by(venue)%>%summarise(runs=sum(total_runs))
+ratio<-vk1%>%mutate(rat=(runs/matches))
+View(ratio)  
+
+View(vk1)
+  ggplot(vk1,aes(venue,runs),fill=match_id)+theme(axis.text.x = element_text(angle = 60, hjust = 1))+geom_bar(stat = "identity")
+
+
+##no.of matches in a statium
+  
+mat<-vk%>%select(batsman,match_id,venue)%>%filter(batsman=="V Kohli")%>%summarise(n_distinct(venue))
+
+
+
+st<-merge(mat,vk1,all = TRUE)
+View(st)  
+View(mat)  
+matt<-mat%>%select(match_id,venue)%>%
+View(matt)
+x<-merge(unique(mat),unique(matt),all = TRUE)  
+View(x)
+
+
+
+
+  
+aaa=vk[batsman=="V Kohli",.(count=.N),by=.(venue,total_runs)]
+bbb=aaa[ratio:=(total_runs/count)]
+View(aaa)
+
+bbb=vk%>%select(batsman,venue,match_id,total_runs) %>%filter(batsman=="V Kohli")%>%group_by(match_id,total_runs)%>%summarise(s=sum(total_runs))%>% summarise(sum(s))
+View(bbb)
